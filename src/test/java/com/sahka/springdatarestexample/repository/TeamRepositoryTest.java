@@ -17,6 +17,7 @@ import com.sahka.springdatarestexample.model.Organization;
 import com.sahka.springdatarestexample.model.Permission;
 import com.sahka.springdatarestexample.model.Team;
 import com.sahka.springdatarestexample.model.User;
+import java.util.Arrays;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
@@ -98,8 +99,8 @@ public class TeamRepositoryTest {
                 .andExpect(status().isOk());
 
         // PUT SCENARIO: fully update team's childs
-        user = User.builder().name("userAfterPut").emails(Collections.singletonList(Email.builder()
-                .email("email2@email.com").build())).build();
+        user = User.builder().name("userAfterPut").emails(Arrays.asList(Email.builder()
+                .email("email0@email.com").build(), Email.builder().email("email1@email.com").build())).build();
         team = Team.builder()
                 .users(Collections.singletonList(user)).name("team").build();
         teamRichJson = objectMapper.writeValueAsString(team);
@@ -119,20 +120,25 @@ public class TeamRepositoryTest {
                 .andDo(print())
                 .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON_UTF8_VALUE))
                 .andExpect(jsonPath("$.users[0].permission.name").value("permissionName"))
-                .andExpect(jsonPath("$.users[0].emails[0].email").value("email2@email.com"))
+                .andExpect(jsonPath("$.users[0].emails[0].email").value("email0@email.com"))
+                .andExpect(jsonPath("$.users[0].emails[1].email").value("email1@email.com"))
                 .andExpect(jsonPath("$.users[0].name").value("userAfterPut"))
                 .andExpect(jsonPath("$.users", hasSize(1)))
-                .andExpect(jsonPath("$.users[0].emails", hasSize(1)))
+                .andExpect(jsonPath("$.users[0].emails", hasSize(2)))
                 .andExpect(status().isOk());
 
         // check that old users and emails were deleted
         assertThat(userRepository.findAll()).size().isEqualTo(1);
-        assertThat(emailRepository.findAll()).size().isEqualTo(1);
+        assertThat(emailRepository.findAll()).size().isEqualTo(2);
 
-        //Patch SCENARIO: update existing user name and email!
+        //Patch SCENARIO: update existing user name and his emails, add new user and new email
+
         mockMvc.perform(patch(teamLocation)
                 .contentType(MediaType.APPLICATION_JSON).content(
-                        "{\"users\": [{\"id\": 1, \"name\": \"nameAfterPatch\", \"emails\": [{\"id\": 1, \"email\": \"emailAfterPatch@email.com\"}]}]}"))
+                        "{\"users\": [{\"id\": 1, \"name\": \"nameAfterPatch\", \"emails\": [{\"id\": 1, \"email\": "
+                                + "\"email0AfterPath@email.com\"}, {\"id\": 2, \"email\": "
+                                + "\"email1AfterPath@email.com\"}]},{\"name\": \"newUserInPatch\", \"emails\": "
+                                + "[{\"email\": \"emailUser2@email.com\"}]}]}\n"))
                 .andDo(print())
                 .andExpect(status().isNoContent());
 
@@ -140,14 +146,19 @@ public class TeamRepositoryTest {
                 .andDo(print())
                 .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON_UTF8_VALUE))
                 .andExpect(jsonPath("$.users[0].permission.name").value("permissionName"))
-                .andExpect(jsonPath("$.users[0].emails[0].email").value("emailAfterPatch@email.com"))
+                .andExpect(jsonPath("$.users[0].emails[0].email").value("email0AfterPath@email.com"))
+                .andExpect(jsonPath("$.users[0].emails[1].email").value("email1AfterPath@email.com"))
                 .andExpect(jsonPath("$.users[0].name").value("nameAfterPatch"))
-                .andExpect(jsonPath("$.users", hasSize(1)))
-                .andExpect(jsonPath("$.users[0].emails", hasSize(1)))
+                .andExpect(jsonPath("$.users", hasSize(2)))
+                .andExpect(jsonPath("$.users[0].emails", hasSize(2)))
+                .andExpect(jsonPath("$.users[1].emails", hasSize(1)))
                 .andExpect(status().isOk());
 
         // check that old users and emails were deleted
-        assertThat(userRepository.findAll()).size().isEqualTo(1);
-        assertThat(emailRepository.findAll()).size().isEqualTo(1);
+        assertThat(userRepository.findAll()).size().isEqualTo(2);
+        assertThat(emailRepository.findAll()).size().isEqualTo(3);
+        assertThat(emailRepository.findById(1L).get().getEmail()).isEqualTo("email0AfterPath@email.com");
+        assertThat(emailRepository.findById(2L).get().getEmail()).isEqualTo("email1AfterPath@email.com");
+        assertThat(emailRepository.findById(3L).get().getEmail()).isEqualTo("emailUser2@email.com");
     }
 }
