@@ -135,10 +135,10 @@ public class TeamRepositoryTest {
 
         mockMvc.perform(patch(teamLocation)
                 .contentType(MediaType.APPLICATION_JSON).content(
-                        "{\"users\": [{\"id\": 1, \"name\": \"nameAfterPatch\", \"emails\": [{\"id\": 1, \"email\": "
+                        ("{\"users\": [{\"id\": 1, \"permission\": \"permissionLink\",  \"name\": \"nameAfterPatch\", \"emails\": [{\"id\": 1, \"email\": "
                                 + "\"email0AfterPath@email.com\"}, {\"id\": 2, \"email\": "
-                                + "\"email1AfterPath@email.com\"}]},{\"name\": \"newUserInPatch\", \"emails\": "
-                                + "[{\"email\": \"emailUser2@email.com\"}]}]}\n"))
+                                + "\"email1AfterPath@email.com\"}]},{\"name\": \"newUserInPatch\", \"permission\": \"permissionLink\",  \"emails\": "
+                                + "[{\"email\": \"emailUser2@email.com\"}]}]}\n").replaceAll("permissionLink", permissionLink)))
                 .andDo(print())
                 .andExpect(status().isNoContent());
 
@@ -146,6 +146,7 @@ public class TeamRepositoryTest {
                 .andDo(print())
                 .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON_UTF8_VALUE))
                 .andExpect(jsonPath("$.users[0].permission.name").value("permissionName"))
+                .andExpect(jsonPath("$.users[1].permission.name").value("permissionName"))
                 .andExpect(jsonPath("$.users[0].emails[0].email").value("email0AfterPath@email.com"))
                 .andExpect(jsonPath("$.users[0].emails[1].email").value("email1AfterPath@email.com"))
                 .andExpect(jsonPath("$.users[0].name").value("nameAfterPatch"))
